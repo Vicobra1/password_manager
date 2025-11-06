@@ -1,0 +1,16 @@
+# Minimal .gitignore for the password-manager folder
+# This file ignores only items that are likely to be created by the
+# password manager app or by the OS/editor while working on this folder.
+
+# Exported password backups (do NOT commit exported credentials)
+kobra-passwords-backup*.json
+*.backup.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary/editor swap files
+*.tmp
+*.swp
+~*
