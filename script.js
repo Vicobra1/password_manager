@@ -1,419 +1,379 @@
-// Handle navigation between sections with smooth transitions
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
+const STORAGE_KEY = 'kobra-passwords';
+const CATEGORIES = ['Personnel', 'Travail', 'Réseaux sociaux', 'Banque', 'Autre'];
+const CHARACTER_SETS = {
+  uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  lowercase: 'abcdefghijklmnopqrstuvwxyz',
+  numbers: '0123456789',
+  symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+};
 
-        // Remove active state from all navigation elements
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+const elements = {
+  list: document.getElementById('password-list'),
+  count: document.getElementById('password-count'),
+  summary: document.getElementById('list-summary'),
+  search: document.getElementById('search-input'),
+  filter: document.getElementById('category-filter'),
+  dialog: document.getElementById('credential-dialog'),
+  form: document.getElementById('credential-form'),
+  dialogTitle: document.getElementById('dialog-title'),
+  site: document.getElementById('site-name'),
+  username: document.getElementById('username'),
+  password: document.getElementById('password'),
+  generated: document.getElementById('generated-password'),
+  toast: document.getElementById('toast')
+};
 
-        // Set active state for clicked element
-        this.classList.add('active');
+let credentials = loadCredentials();
+let editingId = null;
+let toastTimer;
+let hideTimer;
+let visiblePasswords = new Set();
 
-        // Display the corresponding section
-        const target = this.getAttribute('data-target');
-        document.getElementById(target).classList.add('active');
-    });
-});
-
-// Password generator bindings
-document.getElementById('generate-password').addEventListener('click', function() {
-    generatePassword();
-});
-
-document.getElementById('generate-for-vault').addEventListener('click', function() {
-    generatePassword();
-    document.getElementById('password').value = document.getElementById('generated-password').textContent;
-});
-
-document.getElementById('length').addEventListener('input', function() {
-    document.getElementById('length-value').textContent = this.value;
-});
-
-document.getElementById('copy-password').addEventListener('click', function() {
-    const password = document.getElementById('generated-password').textContent;
-    if (password !== "Your generated password will appear here...") {
-        navigator.clipboard.writeText(password).then(() => {
-            alert("Password copied to clipboard!");
-        });
-    }
-});
-
-// Generate password function
-function generatePassword() {
-    const length = parseInt(document.getElementById('length').value);
-    const uppercase = document.getElementById('uppercase').checked;
-    const lowercase = document.getElementById('lowercase').checked;
-    const numbers = document.getElementById('numbers').checked;
-    const symbols = document.getElementById('symbols').checked;
-
-    const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
-    const numberChars = '0123456789';
-    const symbolChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-
-    let allowedChars = '';
-    let password = '';
-
-    if (uppercase) allowedChars += uppercaseChars;
-    if (lowercase) allowedChars += lowercaseChars;
-    if (numbers) allowedChars += numberChars;
-    if (symbols) allowedChars += symbolChars;
-
-    // Ensure at least one character type is selected
-    if (allowedChars.length === 0) {
-        alert('Please select at least one character type!');
-        return;
-    }
-
-    // Build password
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * allowedChars.length);
-        password += allowedChars[randomIndex];
-    }
-
-    document.getElementById('generated-password').textContent = password;
+function loadCredentials() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    if (!Array.isArray(stored)) return [];
+    return stored.filter(item => item && typeof item === 'object').map(item => ({
+      id: item.id || crypto.randomUUID(),
+      site: String(item.site || ''),
+      username: String(item.username || ''),
+      password: String(item.password || ''),
+      notes: String(item.notes || ''),
+      category: CATEGORIES.includes(item.category) ? item.category : 'Autre',
+      date: item.date || new Date().toISOString()
+    }));
+  } catch {
+    return [];
+  }
 }
 
-// Storage system for passwords
-let passwords = JSON.parse(localStorage.getItem('kobra-passwords')) || [];
-
-// Display stored passwords
-function displayPasswords() {
-    const passwordList = document.getElementById('password-list');
-    const passwordCount = document.getElementById('password-count');
-
-    passwordList.innerHTML = '';
-    passwordCount.textContent = passwords.length;
-
-    if (passwords.length === 0) {
-        passwordList.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">No passwords saved yet.</p>';
-        return;
-    }
-
-    passwords.forEach((item, index) => {
-        const passwordItem = document.createElement('div');
-        passwordItem.className = 'password-item';
-        passwordItem.innerHTML = `
-            <h3>${item.site}</h3>
-            <p><strong>User:</strong> ${item.username}</p>
-            <p><strong>Password:</strong> <span class="password-hidden" id="password-${index}">${'•'.repeat(12)}</span></p>
-            ${item.notes ? `<p><strong>Notes:</strong> ${item.notes}</p>` : ''}
-            <div class="password-actions">
-                <button class="btn btn-primary btn-small toggle-password" data-index="${index}">👁️ Show</button>
-                <button class="btn btn-secondary btn-small copy-password" data-index="${index}">📋 Copy</button>
-                <button class="btn btn-primary btn-small edit-password" data-index="${index}">✏️ Edit</button>
-                <button class="btn btn-secondary btn-small delete-password" data-index="${index}">🗑️ Delete</button>
-            </div>
-        `;
-        passwordList.appendChild(passwordItem);
-    });
-
-    // Attach events
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function() {
-            const index = this.getAttribute('data-index');
-            togglePasswordVisibility(index);
-        });
-    });
-
-    document.querySelectorAll('.copy-password').forEach(button => {
-        button.addEventListener('click', function() {
-            const index = this.getAttribute('data-index');
-            copyPassword(index);
-        });
-    });
-
-    document.querySelectorAll('.edit-password').forEach(button => {
-        button.addEventListener('click', function() {
-            const index = this.getAttribute('data-index');
-            editPassword(index);
-        });
-    });
-
-    document.querySelectorAll('.delete-password').forEach(button => {
-        button.addEventListener('click', function() {
-            const index = this.getAttribute('data-index');
-            deletePassword(index);
-        });
-    });
-}
-
-// Toggle password visibility with master password protection
-async function togglePasswordVisibility(index) {
-    const passwordElement = document.getElementById(`password-${index}`);
-    const button = document.querySelector(`.toggle-password[data-index="${index}"]`);
-
-    if (passwordElement.classList.contains('password-hidden')) {
-        if (!checkVaultAccess()) {
-            const password = prompt('Enter master password to view passwords:');
-            if (!password || !unlockVault(password)) {
-                alert('Incorrect master password!');
-                return;
-            }
-        }
-        
-        passwordElement.textContent = passwords[index].password;
-        passwordElement.classList.remove('password-hidden');
-        passwordElement.classList.add('password-visible');
-        button.textContent = '🙈 Hide';
-        
-        resetAutoLockTimer();
-    } else {
-        passwordElement.textContent = '•'.repeat(12);
-        passwordElement.classList.remove('password-visible');
-        passwordElement.classList.add('password-hidden');
-        button.textContent = '👁️ Show';
-    }
-}
-
-// Copy one password
-function copyPassword(index) {
-    navigator.clipboard.writeText(passwords[index].password).then(() => {
-        alert(`Password for ${passwords[index].site} copied!`);
-    });
-}
-
-// Edit password
-function editPassword(index) {
-    const item = passwords[index];
-
-    // Fill form with existing data
-    document.getElementById('site-name').value = item.site;
-    document.getElementById('username').value = item.username;
-    document.getElementById('password').value = item.password;
-    document.getElementById('notes').value = item.notes || '';
-
-    // Remove from list so user can save edited entry
-    passwords.splice(index, 1);
-
-    // Update display and storage
-    displayPasswords();
-    savePasswords();
-
-    alert(`Editing password for ${item.site}. Modify the fields and save again.`);
-}
-
-// Delete password
-function deletePassword(index) {
-    if (confirm(`Are you sure you want to delete the password for ${passwords[index].site}?`)) {
-        passwords.splice(index, 1);
-        displayPasswords();
-        savePasswords();
-    }
-}
-
-// Save to localStorage
-function savePasswords() {
-    localStorage.setItem('kobra-passwords', JSON.stringify(passwords));
-}
-
-// Save form data
-document.getElementById('save-password').addEventListener('click', function() {
-    const siteName = document.getElementById('site-name').value;
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const notes = document.getElementById('notes').value;
-
-    if (!siteName || !username || !password) {
-        alert('Please fill in all required fields!');
-        return;
-    }
-
-    passwords.push({
-        site: siteName,
-        username: username,
-        password: password,
-        notes: notes,
-        date: new Date().toISOString()
-    });
-
-    savePasswords();
-    displayPasswords();
-
-    // Reset form
-    document.getElementById('site-name').value = '';
-    document.getElementById('username').value = '';
-    document.getElementById('password').value = '';
-    document.getElementById('notes').value = '';
-
-    alert(`Credentials for ${siteName} saved successfully!`);
-});
-
-// Export data
-document.getElementById('export-data').addEventListener('click', function() {
-    const dataStr = JSON.stringify(passwords, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'kobra-passwords-backup.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-});
-
-// Import data
-document.getElementById('import-data').addEventListener('click', function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-
-        reader.onload = function(event) {
-            try {
-                const importedData = JSON.parse(event.target.result);
-
-                if (Array.isArray(importedData)) {
-                    if (confirm(`Do you want to import ${importedData.length} passwords? This will overwrite your current data.`)) {
-                        passwords = importedData;
-                        savePasswords();
-                        displayPasswords();
-                        alert('Import successful!');
-                    }
-                } else {
-                    alert('The file is not valid.');
-                }
-            } catch (error) {
-                alert('Error during import: ' + error.message);
-            }
-        };
-
-        reader.readAsText(file);
-    };
-
-    input.click();
-});
-
-// Security and authentication management
-let isLocked = true;
-let autoLockTimer = null;
-let masterPassword = localStorage.getItem('master-password');
-
-// Function to check if vault access is allowed
-function checkVaultAccess() {
-    if (!masterPassword) {
-        return true; // Allow access if no master password is set
-    }
-    return !isLocked;
-}
-
-// Function to lock the vault
-function lockVault() {
-    isLocked = true;
-    document.querySelectorAll('.password-hidden').forEach(el => {
-        el.textContent = '•'.repeat(12);
-        el.classList.remove('password-visible');
-        el.classList.add('password-hidden');
-    });
-    document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.textContent = '👁️ Show';
-    });
-}
-
-// Function to unlock the vault
-function unlockVault(password) {
-    if (password === masterPassword) {
-        isLocked = false;
-        resetAutoLockTimer();
-        return true;
-    }
+function saveCredentials() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(credentials));
+    return true;
+  } catch {
+    showToast('Impossible d’enregistrer les données dans ce navigateur.', 'error');
     return false;
+  }
 }
 
-// Function to reset auto-lock timer
-function resetAutoLockTimer() {
-    if (autoLockTimer) {
-        clearTimeout(autoLockTimer);
-    }
-    
-    const autoLockTime = parseInt(localStorage.getItem('auto-lock-time') || '5') * 60000; // Convert minutes to milliseconds
-    if (autoLockTime > 0) {
-        autoLockTimer = setTimeout(lockVault, autoLockTime);
-    }
+function showToast(message, type = 'success') {
+  elements.toast.textContent = message;
+  elements.toast.className = `toast is-visible ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => elements.toast.classList.remove('is-visible'), 2800);
 }
 
-// Theme management
+function setSection(sectionId) {
+  const names = { coffre: 'Coffre', generateur: 'Générateur', parametres: 'Paramètres' };
+  document.querySelectorAll('.nav-link').forEach(button => {
+    const active = button.dataset.target === sectionId;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('.content-section').forEach(section => {
+    const active = section.id === sectionId;
+    section.classList.toggle('active', active);
+    section.hidden = !active;
+  });
+  document.getElementById('current-section-name').textContent = names[sectionId] || 'Coffre';
+}
+
+function makeButton(label, action, className = 'button button-quiet', title = label) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.dataset.action = action;
+  button.textContent = label;
+  button.title = title;
+  return button;
+}
+
+function renderCredentials() {
+  const query = elements.search.value.trim().toLocaleLowerCase('fr');
+  const category = elements.filter.value;
+  const filtered = credentials.filter(item => {
+    const matchesText = [item.site, item.username, item.notes].some(value => value.toLocaleLowerCase('fr').includes(query));
+    return matchesText && (!category || item.category === category);
+  });
+
+  elements.list.replaceChildren();
+  elements.count.textContent = String(credentials.length);
+  elements.summary.textContent = filtered.length === credentials.length
+    ? `${credentials.length} ${credentials.length === 1 ? 'identifiant' : 'identifiants'}`
+    : `${filtered.length} affiché${filtered.length === 1 ? '' : 's'} sur ${credentials.length}`;
+
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    const icon = document.createElement('span');
+    icon.className = 'empty-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = query || category ? '⌕' : '▤';
+    const title = document.createElement('h3');
+    title.textContent = query || category ? 'Aucun résultat' : 'Votre coffre est vide';
+    const description = document.createElement('p');
+    description.textContent = query || category
+      ? 'Essayez un autre terme ou une autre catégorie.'
+      : 'Ajoutez votre premier identifiant pour commencer à explorer le projet.';
+    empty.append(icon, title, description);
+    if (!query && !category) empty.append(makeButton('＋ Ajouter un identifiant', 'add', 'button button-primary'));
+    elements.list.append(empty);
+    return;
+  }
+
+  filtered.forEach(item => {
+    const card = document.createElement('article');
+    card.className = 'credential-card';
+    const mark = document.createElement('div');
+    mark.className = 'site-mark';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = (item.site.trim()[0] || '?').toLocaleUpperCase('fr');
+
+    const details = document.createElement('div');
+    details.className = 'credential-details';
+    const title = document.createElement('h3');
+    title.textContent = item.site;
+    const user = document.createElement('p');
+    user.className = 'credential-username';
+    user.textContent = item.username;
+    const categoryTag = document.createElement('span');
+    categoryTag.className = 'category-tag';
+    categoryTag.textContent = item.category;
+    details.append(title, user, categoryTag);
+
+    const secret = document.createElement('div');
+    secret.className = 'credential-secret';
+    const passwordLabel = document.createElement('span');
+    passwordLabel.className = 'secret-label';
+    passwordLabel.textContent = 'MOT DE PASSE';
+    const passwordText = document.createElement('code');
+    passwordText.textContent = visiblePasswords.has(item.id) ? item.password : '••••••••••••';
+    secret.append(passwordLabel, passwordText);
+
+    const actions = document.createElement('div');
+    actions.className = 'credential-actions';
+    const reveal = makeButton(visiblePasswords.has(item.id) ? 'Masquer' : 'Afficher', 'toggle', 'button button-quiet button-small');
+    const copy = makeButton('Copier', 'copy', 'button button-quiet button-small');
+    const edit = makeButton('Modifier', 'edit', 'button button-quiet button-small');
+    const remove = makeButton('Supprimer', 'delete', 'button button-danger button-small');
+    [reveal, copy, edit, remove].forEach(button => { button.dataset.id = item.id; });
+    actions.append(reveal, copy, edit, remove);
+    card.append(mark, details, secret, actions);
+    elements.list.append(card);
+  });
+}
+
+function openCredentialDialog(item = null) {
+  editingId = item?.id || null;
+  elements.dialogTitle.textContent = editingId ? 'Modifier un identifiant' : 'Ajouter un identifiant';
+  elements.form.elements.site.value = item?.site || '';
+  elements.form.elements.username.value = item?.username || '';
+  elements.form.elements.password.value = item?.password || '';
+  elements.form.elements.category.value = item?.category || 'Personnel';
+  elements.form.elements.notes.value = item?.notes || '';
+  elements.dialog.showModal();
+  requestAnimationFrame(() => elements.site.focus());
+}
+
+function closeCredentialDialog() {
+  elements.dialog.close();
+  elements.form.reset();
+  editingId = null;
+}
+
+function randomIndex(max) {
+  const limit = Math.floor(0x100000000 / max) * max;
+  const value = new Uint32Array(1);
+  do crypto.getRandomValues(value); while (value[0] >= limit);
+  return value[0] % max;
+}
+
+function generatePassword() {
+  const length = Number(document.getElementById('length').value);
+  const selectedSets = Object.entries(CHARACTER_SETS)
+    .filter(([key]) => document.getElementById(key).checked)
+    .map(([, characters]) => characters);
+  if (selectedSets.length === 0) {
+    showToast('Sélectionnez au moins un type de caractère.', 'error');
+    return '';
+  }
+  const allCharacters = selectedSets.join('');
+  const password = selectedSets.map(set => set[randomIndex(set.length)]);
+  while (password.length < length) password.push(allCharacters[randomIndex(allCharacters.length)]);
+  for (let index = password.length - 1; index > 0; index -= 1) {
+    const other = randomIndex(index + 1);
+    [password[index], password[other]] = [password[other], password[index]];
+  }
+  const result = password.join('');
+  elements.generated.value = result;
+  return result;
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const temporary = document.createElement('textarea');
+      temporary.value = text;
+      temporary.setAttribute('readonly', '');
+      temporary.style.position = 'fixed';
+      temporary.style.opacity = '0';
+      document.body.append(temporary);
+      temporary.select();
+      const copied = document.execCommand('copy');
+      temporary.remove();
+      if (!copied) throw new Error('Clipboard unavailable');
+    }
+    showToast('Mot de passe copié.');
+  } catch {
+    showToast('Copie impossible dans ce navigateur.', 'error');
+  }
+}
+
+function startHideTimer() {
+  clearTimeout(hideTimer);
+  const minutes = Number(localStorage.getItem('auto-lock-time') || 5);
+  if (minutes > 0) {
+    hideTimer = setTimeout(() => {
+      visiblePasswords.clear();
+      renderCredentials();
+      showToast('Les mots de passe affichés ont été masqués.');
+    }, minutes * 60_000);
+  }
+}
+
+function exportCredentials() {
+  if (!confirm('Le fichier exporté contiendra les mots de passe en clair. Ne le partagez pas. Continuer ?')) return;
+  const blob = new Blob([JSON.stringify(credentials, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'kobra-passwords-backup.json';
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast('Sauvegarde téléchargée. Protégez ce fichier.');
+}
+
+function importCredentials(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data) || !data.every(item => item && typeof item.site === 'string' && typeof item.username === 'string' && typeof item.password === 'string')) {
+        throw new Error('Format non reconnu');
+      }
+      if (!confirm(`Importer ${data.length} identifiant(s) et remplacer le contenu actuel du coffre ?`)) return;
+      credentials = data.map(item => ({
+        id: item.id || crypto.randomUUID(),
+        site: item.site.slice(0, 100),
+        username: item.username.slice(0, 150),
+        password: item.password.slice(0, 512),
+        notes: typeof item.notes === 'string' ? item.notes.slice(0, 1000) : '',
+        category: CATEGORIES.includes(item.category) ? item.category : 'Autre',
+        date: item.date || new Date().toISOString()
+      }));
+      visiblePasswords.clear();
+      if (saveCredentials()) { renderCredentials(); showToast('Importation terminée.'); }
+    } catch {
+      showToast('Ce fichier ne contient pas une sauvegarde Kobra valide.', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.querySelectorAll('.nav-link').forEach(button => button.addEventListener('click', () => setSection(button.dataset.target)));
+document.getElementById('add-credential').addEventListener('click', () => openCredentialDialog());
+document.getElementById('close-dialog').addEventListener('click', closeCredentialDialog);
+document.getElementById('cancel-dialog').addEventListener('click', closeCredentialDialog);
+elements.dialog.addEventListener('click', event => { if (event.target === elements.dialog) closeCredentialDialog(); });
+
+elements.form.addEventListener('submit', event => {
+  event.preventDefault();
+  const formData = new FormData(elements.form);
+  const site = String(formData.get('site')).trim();
+  const username = String(formData.get('username')).trim();
+  const password = String(formData.get('password'));
+  if (!site || !username || !password.trim()) { showToast('Remplissez les champs obligatoires.', 'error'); return; }
+  const wasEditing = Boolean(editingId);
+  const existing = wasEditing ? credentials.find(item => item.id === editingId) : null;
+  const updated = {
+    id: editingId || crypto.randomUUID(), site, username, password,
+    category: CATEGORIES.includes(formData.get('category')) ? formData.get('category') : 'Autre',
+    notes: String(formData.get('notes')).trim(), date: existing?.date || new Date().toISOString()
+  };
+  if (wasEditing) credentials = credentials.map(item => item.id === editingId ? updated : item);
+  else credentials.unshift(updated);
+  if (saveCredentials()) {
+    closeCredentialDialog(); renderCredentials();
+    showToast(wasEditing ? 'Identifiant mis à jour.' : 'Identifiant ajouté au coffre.');
+  }
+});
+
+elements.list.addEventListener('click', async event => {
+  const button = event.target.closest('[data-action]');
+  if (!button) return;
+  if (button.dataset.action === 'add') return openCredentialDialog();
+  const item = credentials.find(entry => entry.id === button.dataset.id);
+  if (!item) return;
+  switch (button.dataset.action) {
+    case 'toggle':
+      if (visiblePasswords.has(item.id)) visiblePasswords.delete(item.id);
+      else { visiblePasswords.add(item.id); startHideTimer(); }
+      renderCredentials();
+      break;
+    case 'copy': await copyText(item.password); break;
+    case 'edit': openCredentialDialog(item); break;
+    case 'delete':
+      if (confirm(`Supprimer l’identifiant « ${item.site} » ?`)) {
+        credentials = credentials.filter(entry => entry.id !== item.id);
+        visiblePasswords.delete(item.id);
+        if (saveCredentials()) { renderCredentials(); showToast('Identifiant supprimé.'); }
+      }
+      break;
+  }
+});
+
+elements.search.addEventListener('input', renderCredentials);
+elements.filter.addEventListener('change', renderCredentials);
+document.getElementById('length').addEventListener('input', event => { document.getElementById('length-value').textContent = event.target.value; });
+document.getElementById('generate-password').addEventListener('click', generatePassword);
+document.getElementById('generate-for-vault').addEventListener('click', () => { const password = generatePassword(); if (password) elements.password.value = password; });
+document.getElementById('copy-generated').addEventListener('click', () => {
+  if (elements.generated.value) copyText(elements.generated.value);
+  else showToast('Générez d’abord un mot de passe.', 'error');
+});
+document.getElementById('use-generated').addEventListener('click', () => {
+  if (!elements.generated.value) generatePassword();
+  if (elements.generated.value) openCredentialDialog({ password: elements.generated.value });
+});
+
 function getPreferredTheme() {
-    // Check localStorage first
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        return savedTheme;
-    }
-    
-    // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-    }
-    
-    return 'light';
+  return localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 }
-
 function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem('theme', theme);
+  document.getElementById('dark-mode').checked = theme === 'dark';
 }
-
-// Theme toggle handler
-document.getElementById('theme-toggle').addEventListener('click', () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || getPreferredTheme();
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
+document.getElementById('theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+document.getElementById('dark-mode').addEventListener('change', event => setTheme(event.target.checked ? 'dark' : 'light'));
+document.getElementById('auto-lock').addEventListener('change', event => {
+  localStorage.setItem('auto-lock-time', event.target.value);
+  if (visiblePasswords.size) startHideTimer();
+  showToast('Préférence mise à jour.');
+});
+document.getElementById('export-data').addEventListener('click', exportCredentials);
+document.getElementById('import-data').addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json,application/json';
+  input.addEventListener('change', () => importCredentials(input.files[0]), { once: true });
+  input.click();
 });
 
-// Handle system theme changes
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('theme')) {
-        setTheme(e.matches ? 'dark' : 'light');
-    }
-});
-
-// Save settings handler
-document.getElementById('save-settings').addEventListener('click', function() {
-    const newMasterPassword = document.getElementById('master-password').value;
-    const autoLockTime = document.getElementById('auto-lock').value;
-    const darkMode = document.getElementById('dark-mode').checked;
-    
-    // Save master password if provided
-    if (newMasterPassword) {
-        masterPassword = newMasterPassword;
-        localStorage.setItem('master-password', masterPassword);
-        lockVault(); // Lock vault when password changes
-        alert('Master password updated. Vault is now locked.');
-    }
-    
-    // Save auto-lock time
-    localStorage.setItem('auto-lock-time', autoLockTime);
-    console.log('Auto-lock time set to: ' + autoLockTime + ' minutes');
-    
-    // Save theme preference
-    setTheme(darkMode ? 'dark' : 'light');
-    
-    // Clear master password field for security
-    document.getElementById('master-password').value = '';
-    
-    alert('Settings saved successfully!');
-});
-
-// Initialize on load
-window.addEventListener('load', function() {
-    generatePassword();
-    displayPasswords();
-    
-    // Initialize theme
-    setTheme(getPreferredTheme());
-    
-    // Initialize settings form
-    const autoLockTime = localStorage.getItem('auto-lock-time') || '5';
-    document.getElementById('auto-lock').value = autoLockTime;
-    document.getElementById('dark-mode').checked = getPreferredTheme() === 'dark';
-    
-    // Set initial lock state
-    if (masterPassword) {
-        lockVault();
-    }
-});
+setTheme(getPreferredTheme());
+document.getElementById('auto-lock').value = localStorage.getItem('auto-lock-time') || '5';
+renderCredentials();

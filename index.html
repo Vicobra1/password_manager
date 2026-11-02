@@ -1,178 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kobra Password - Password Manager</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10151e">
+  <title>Kobra — Gestionnaire de mots de passe</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="manga-effect effect-1"></div>
-    <div class="manga-effect effect-2"></div>
-    
-    <div class="container">
-        <header>
-            <div class="logo">
-                <div class="logo-icon"></div>
-                <h1>KOBRA PASSWORD</h1>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="#" class="nav-link active" data-target="vault">Vault</a></li>
-                    <li><a href="#" class="nav-link" data-target="generator">Generator</a></li>
-                    <li><a href="#" class="nav-link" data-target="settings">Settings</a></li>
-                    <li>
-                        <button id="theme-toggle" class="btn btn-icon">
-                            <span class="theme-icon light">☀️</span>
-                            <span class="theme-icon dark">🌙</span>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        </header>
-        
-        <main>
-            <!-- Vault Section -->
-            <section id="vault" class="content-section active">
-                <div class="manga-card">
-                    <h2>🗂️ My Secure Vault</h2>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navigation principale">
+      <a class="brand" href="#coffre" aria-label="Kobra, accueil">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span class="brand-copy"><strong>KOBRA</strong><small>Gestionnaire</small></span>
+      </a>
+      <span class="nav-caption">ESPACE PERSONNEL</span>
+      <nav class="side-nav">
+        <button class="nav-link active" type="button" data-target="coffre" aria-current="page"><span class="nav-icon" aria-hidden="true">▤</span><span>Coffre</span></button>
+        <button class="nav-link" type="button" data-target="generateur"><span class="nav-icon" aria-hidden="true">✳</span><span>Générateur</span></button>
+        <button class="nav-link" type="button" data-target="parametres"><span class="nav-icon" aria-hidden="true">⚙</span><span>Paramètres</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="prototype-badge"><span class="status-dot"></span><span>Prototype local</span></div>
+        <p>Un projet d’apprentissage, en évolution.</p>
+      </div>
+    </aside>
 
-                    <div class="speech-bubble">
-                        <p> Here your credentials are kept safe . Add your first passwords or generate ultra-secure ones!</p>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="site-name">Site / Application name</label>
-                        <input type="text" id="site-name" placeholder="e.g. Facebook, Gmail...">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="username">Username / Email</label>
-                        <input type="text" id="username" placeholder="Your username">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="password" id="password" placeholder="Your secure password">
-                            <button class="btn btn-secondary" id="generate-for-vault">Generate</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="notes">Notes (optional)</label>
-                        <textarea id="notes" rows="3" placeholder="Additional information..."></textarea>
-                    </div>
-                    
-                    <button class="btn btn-primary" id="save-password">💾 Save to vault</button>
-                </div>
-                
-                <div class="manga-card">
-                    <h2>🔐 Saved Passwords <span class="password-count" id="password-count">0</span></h2>
-                    
-                    <div class="password-grid" id="password-list">
-                        <!-- Les mots de passe sauvegardés apparaîtront ici dynamiquement -->
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Section Générateur -->
-            <section id="generator" class="content-section">
-                <div class="manga-card">
-                    <h2>⚡ Kobra Password Generator</h2>
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Kobra</span><span aria-hidden="true">/</span><strong id="current-section-name">Coffre</strong></div>
+        <button id="theme-toggle" class="icon-button theme-button" type="button" aria-label="Changer de thème" title="Changer de thème"><span aria-hidden="true">◐</span></button>
+      </header>
 
-                    <div class="speech-bubble">
-                        <p>Kobra can create passwords so strong no hacker will break them! Customize the options and let the magic happen!</p>
-                    </div>
+      <section id="coffre" class="content-section active" aria-labelledby="vault-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">VOTRE ESPACE</p><h1 id="vault-title">Votre coffre</h1><p class="page-subtitle">Retrouvez et gérez vos identifiants au même endroit.</p></div>
+          <button id="add-credential" class="button button-primary" type="button"><span aria-hidden="true">＋</span> Ajouter un identifiant</button>
+        </div>
 
-                    <div class="password-display" id="generated-password">
-                        Your generated password will appear here...
-                    </div>
+        <div class="notice" role="note"><span class="notice-icon" aria-hidden="true">i</span><p><strong>Version d’apprentissage :</strong> les données sont stockées localement sans chiffrement. Utilisez uniquement des identifiants fictifs.</p></div>
 
-                    <div class="password-options">
-                        <div class="option-group">
-                            <input type="range" id="length" min="8" max="32" value="16">
-                            <label for="length">Length: <span id="length-value">16</span> characters</label>
-                        </div>
+        <div class="toolbar">
+          <label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Rechercher dans le coffre</span><input id="search-input" type="search" placeholder="Rechercher un site ou un identifiant…" autocomplete="off"></label>
+          <label class="filter-label" for="category-filter">Catégorie</label>
+          <select id="category-filter" class="category-filter"><option value="">Toutes</option><option>Personnel</option><option>Travail</option><option>Réseaux sociaux</option><option>Banque</option><option>Autre</option></select>
+        </div>
 
-                        <div class="option-group">
-                            <input type="checkbox" id="uppercase" checked>
-                            <label for="uppercase">Uppercase (A-Z)</label>
-                        </div>
+        <div class="list-heading"><div><h2>Identifiants enregistrés</h2><p id="list-summary">0 identifiant</p></div><span id="password-count" class="count-badge">0</span></div>
+        <div id="password-list" class="credential-list" aria-live="polite"></div>
+      </section>
 
-                        <div class="option-group">
-                            <input type="checkbox" id="lowercase" checked>
-                            <label for="lowercase">Lowercase (a-z)</label>
-                        </div>
+      <section id="generateur" class="content-section" aria-labelledby="generator-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">OUTIL</p><h1 id="generator-title">Générateur</h1><p class="page-subtitle">Créez un mot de passe selon vos critères.</p></div></div>
+        <div class="panel generator-panel">
+          <div class="panel-heading"><div><span class="panel-icon" aria-hidden="true">✳</span><h2>Personnaliser le mot de passe</h2></div><p>Choisissez la longueur et les caractères à inclure.</p></div>
+          <div class="generated-output"><label for="generated-password">Mot de passe généré</label><div class="output-row"><input id="generated-password" type="text" readonly value="" placeholder="Cliquez sur Générer" spellcheck="false"><button id="copy-generated" class="button button-secondary" type="button">Copier</button></div></div>
+          <div class="length-control"><label for="length">Longueur <strong><span id="length-value">20</span> caractères</strong></label><input type="range" id="length" min="8" max="64" value="20"></div>
+          <fieldset class="character-options"><legend>Types de caractères</legend>
+            <label class="check-row"><input type="checkbox" id="uppercase" checked><span class="custom-check" aria-hidden="true"></span><span>Lettres majuscules <small>A–Z</small></span></label>
+            <label class="check-row"><input type="checkbox" id="lowercase" checked><span class="custom-check" aria-hidden="true"></span><span>Lettres minuscules <small>a–z</small></span></label>
+            <label class="check-row"><input type="checkbox" id="numbers" checked><span class="custom-check" aria-hidden="true"></span><span>Chiffres <small>0–9</small></span></label>
+            <label class="check-row"><input type="checkbox" id="symbols" checked><span class="custom-check" aria-hidden="true"></span><span>Symboles <small>! @ # …</small></span></label>
+          </fieldset>
+          <div class="panel-actions"><button id="generate-password" class="button button-primary" type="button"><span aria-hidden="true">✳</span> Générer</button><button id="use-generated" class="button button-quiet" type="button">Ajouter au coffre <span aria-hidden="true">↗</span></button></div>
+        </div>
+      </section>
 
-                        <div class="option-group">
-                            <input type="checkbox" id="numbers" checked>
-                            <label for="numbers">Numbers (0-9)</label>
-                        </div>
+      <section id="parametres" class="content-section" aria-labelledby="settings-title" hidden>
+        <div class="page-heading"><div><p class="eyebrow">PRÉFÉRENCES</p><h1 id="settings-title">Paramètres</h1><p class="page-subtitle">Ajustez l’apparence et gérez vos données locales.</p></div></div>
+        <div class="panel settings-panel">
+          <div class="settings-group"><div><h2>Apparence</h2><p>Choisissez le thème de l’application.</p></div><label class="setting-control" for="dark-mode">Thème sombre <input type="checkbox" id="dark-mode" checked></label></div>
+          <div class="settings-group"><div><h2>Confidentialité à l’écran</h2><p>Masquer automatiquement les mots de passe révélés après le délai choisi.</p></div><label class="setting-control" for="auto-lock">Masquer après <select id="auto-lock"><option value="1">1 minute</option><option value="5" selected>5 minutes</option><option value="10">10 minutes</option><option value="30">30 minutes</option><option value="0">Jamais</option></select></label></div>
+          <div class="settings-group"><div><h2>Sauvegarde locale</h2><p>Les fichiers exportés contiennent les mots de passe en clair. Ne les partagez pas et ne les ajoutez pas à GitHub.</p></div><div class="settings-actions"><button id="export-data" class="button button-secondary" type="button">Exporter</button><button id="import-data" class="button button-quiet" type="button">Importer</button></div></div>
+          <div class="settings-group prototype-explanation"><div><h2>À propos du prototype</h2><p>Le mot de passe maître et le chiffrement ne sont pas encore implémentés. Le masquage à l’écran ne protège pas les données enregistrées.</p></div></div>
+        </div>
+      </section>
 
-                        <div class="option-group">
-                            <input type="checkbox" id="symbols" checked>
-                            <label for="symbols">Symbols (!@#$%...)</label>
-                        </div>
-                    </div>
+      <footer class="app-footer"><span>Kobra · Projet d’apprentissage</span><span>Version 2 en développement</span></footer>
+    </main>
+  </div>
 
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <button class="btn btn-primary" id="generate-password">✨ Generate password</button>
-                        <button class="btn btn-secondary" id="copy-password">📋 Copy</button>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- Section Paramètres -->
-            <section id="settings" class="content-section">
-                <div class="manga-card">
-                    <h2>⚙️ Kobra Settings</h2>
-
-                    <div class="speech-bubble">
-                        <p>Customize your Kobra experience! Enable advanced features and make your vault even more secure!</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="master-password">Master password</label>
-                        <input type="password" id="master-password" placeholder="Set a strong master password">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="auto-lock">Auto-lock after</label>
-                        <select id="auto-lock">
-                            <option value="1">1 minute</option>
-                            <option value="5" selected>5 minutes</option>
-                            <option value="10">10 minutes</option>
-                            <option value="30">30 minutes</option>
-                            <option value="0">Never</option>
-                        </select>
-                    </div>
-
-                    <div class="option-group">
-                        <input type="checkbox" id="dark-mode" checked>
-                        <label for="dark-mode">Dark mode (recommended)</label>
-                    </div>
-
-                    <div class="option-group">
-                        <input type="checkbox" id="backup">
-                        <label for="backup">Auto backup to cloud</label>
-                    </div>
-
-                    <div class="form-group">
-                        <button class="btn btn-primary" id="export-data">📤 Export data</button>
-                        <button class="btn btn-secondary" id="import-data">📥 Import data</button>
-                    </div>
-
-                    <button class="btn btn-primary" id="save-settings">💾 Save settings</button>
-                </div>
-            </section>
-        </main>
-        
-        <footer>
-            <p>Kobra Password Manager - Protect your credentials </p>
-            <p></p>
-        </footer>
-    </div>
-    <script src="script.js"></script>
+  <dialog id="credential-dialog" class="credential-dialog" aria-labelledby="dialog-title">
+    <form id="credential-form">
+      <div class="dialog-heading"><div><p class="eyebrow">COFFRE</p><h2 id="dialog-title">Ajouter un identifiant</h2></div><button id="close-dialog" class="icon-button" type="button" aria-label="Fermer">×</button></div>
+      <label class="field-label" for="site-name">Nom du site ou de l’application <span>*</span></label><input id="site-name" name="site" type="text" placeholder="Ex. : Gmail" maxlength="100" required autocomplete="off">
+      <label class="field-label" for="username">Nom d’utilisateur ou e-mail <span>*</span></label><input id="username" name="username" type="text" placeholder="Votre identifiant" maxlength="150" required autocomplete="off">
+      <label class="field-label" for="password">Mot de passe <span>*</span></label><div class="password-input-row"><input id="password" name="password" type="password" placeholder="Saisissez ou générez un mot de passe" maxlength="512" required autocomplete="new-password"><button id="generate-for-vault" class="button button-quiet button-compact" type="button">Générer</button></div>
+      <label class="field-label" for="category">Catégorie</label><select id="category" name="category"><option>Personnel</option><option>Travail</option><option>Réseaux sociaux</option><option>Banque</option><option>Autre</option></select>
+      <label class="field-label" for="notes">Note <span class="optional-label">facultatif</span></label><textarea id="notes" name="notes" rows="3" maxlength="1000" placeholder="Informations utiles"></textarea>
+      <div class="dialog-actions"><button id="cancel-dialog" class="button button-quiet" type="button">Annuler</button><button id="save-password" class="button button-primary" type="submit">Enregistrer</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
 </body>
 </html>

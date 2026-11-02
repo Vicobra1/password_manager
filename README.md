@@ -1,39 +1,35 @@
-# Kobra Password — Password Manager (static frontend)
+# Kobra — Gestionnaire de mots de passe
 
-Simple client-side password manager UI (static HTML/CSS/JS). This repository contains the front-end part of a small password manager demo called "Kobra Password". It is intended for local use and experimentation. The app stores data in the browser's localStorage and provides export/import of data as JSON.
+Kobra est un projet d’apprentissage réalisé en HTML, CSS et JavaScript. Il utilise un petit serveur local Python pour conserver une adresse stable dans le navigateur.
 
-## What is included
+## Démarrer sans fenêtre de terminal
 
-- `index.html` — the main static HTML page (now in English).
-- `style.css` — styles extracted from the original HTML.
-- `script.js` — JavaScript logic: password generation, localStorage-backed saving, import/export, UI interactions.
-- `.gitignore` — minimal rules to avoid committing password backups and temporary files.
+Double-clique sur **Lancer Kobra.vbs**. Le navigateur ouvre Kobra sans afficher de fenêtre noire. Pour arrêter le serveur local, double-clique sur **Arrêter Kobra.vbs**.
 
-## Quick start (open locally)
+Si tu veux voir les messages de démarrage pour dépanner, utilise plutôt **Lancer Kobra.bat**. Python 3 doit être installé. Le serveur écoute uniquement sur `127.0.0.1`, donc il n’est pas exposé aux autres appareils du réseau.
 
-You can open the app directly in your browser by double-clicking `index.html`. For a more robust local test (recommended), run a simple HTTP server and open the page from `http://localhost`:
+## Données existantes et stockage
 
-Windows PowerShell (from the `password-manager` folder):
+Le coffre utilise `localStorage`, le stockage local du navigateur. Le navigateur conserve les entrées entre les sessions tant que tu réutilises le même navigateur et la même adresse (`http://127.0.0.1:8765`). Il ne s’agit pas d’un fichier visible dans le dossier du projet.
 
-```powershell
-cd "password-manager"        # or navigate to the folder that contains the files
-python -m http.server 8000
+Le stockage de pages ouvertes en double-cliquant sur `index.html` (`file://`) peut différer de celui de l’adresse locale du lanceur. Si des entrées apparaissent encore avec l’ancienne ouverture, exporte-les depuis **Paramètres**, démarre le lanceur, puis importe le fichier dans Kobra. L’ancienne copie n’est pas effacée.
 
-# Then open http://localhost:8000 in your browser
-```
+## Interface de la version 2
 
-Notes:
-- The app is purely client-side. No backend or database is required. Data is stored in your browser's `localStorage`.
+- Navigation latérale sur ordinateur et barre de navigation en bas sur petit écran.
+- Coffre avec recherche, filtre par catégorie, état vide et cartes d’identifiants.
+- Formulaire d’ajout et de modification dans une fenêtre dédiée.
+- Générateur avec longueur réglable et choix des catégories de caractères.
+- Messages de confirmation intégrés, choix du thème et import/export JSON.
+- Les anciennes entrées sans catégorie apparaissent sous « Autre ».
 
-## Security notice (important)
+## Limites de sécurité
 
-- Do NOT commit exported JSON backups that contain real passwords. The repository's `.gitignore` already ignores files named like `kobra-passwords-backup*.json` and `*.backup.json`.
-- This demo uses plaintext storage in the browser for simplicity. Do NOT use it to store real, sensitive credentials for production use.
+Cette application pédagogique **ne chiffre pas les données**. Les entrées sont conservées en clair dans le stockage du navigateur, et les sauvegardes JSON le sont aussi. Le masquage à l’écran n’est pas un verrouillage du coffre. N’utilise que des identifiants fictifs et ne publie jamais une sauvegarde contenant des secrets.
 
+## Technologies
 
-## Contributing
-
-This is a small single-developer demo. If you plan to accept contributions, consider adding contribution guidelines or tests. For now, changes can be made by editing the three main files.
-
----
-_Generated README — tailored to the `password-manager` folder contents._
+- HTML pour la structure
+- CSS pour la présentation adaptative
+- JavaScript natif pour les interactions et le stockage dans le navigateur
+- Python standard pour servir l’application uniquement sur l’ordinateur local
